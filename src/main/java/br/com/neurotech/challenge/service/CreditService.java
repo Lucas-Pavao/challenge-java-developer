@@ -11,6 +11,11 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 import br.com.neurotech.challenge.controllers.CreditController;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 @Service
 public class CreditService {
 
@@ -34,7 +39,6 @@ public class CreditService {
 			throw new ClientNotEligibleForCreditException("Cliente não é elegível para crédito para veículo do tipo SUV.");
 		}
 
-		// Criar e retornar DTO com informações do cliente e tipo de crédito
 		CreditCheckResponseDto response = new CreditCheckResponseDto(
 				client.getId(),
 				client.getName(),
@@ -43,10 +47,26 @@ public class CreditService {
 				"Apto para crédito automotivo na modalidade: " + creditType
 		);
 
-		// Adicionar links HATEOAS
-		response.add(linkTo(methodOn(CreditController.class).checkCredit(clientId, model)).withSelfRel());
 		return response;
 	}
+
+	public List<Map<String, Object>> findEligibleClientsForHatch() {
+		List<NeurotechClient> clients = repository.findAll();
+
+
+		return clients.stream()
+				.filter(client -> client.getAge() >= 23 && client.getAge() <= 49)
+				.filter(client -> determineCreditType(client).contains("Juros Fixos"))
+				.filter(this::isEligibleForHatch)
+				.map(client -> {
+					Map<String, Object> clientData = new HashMap<>();
+					clientData.put("name", client.getName());
+					clientData.put("income", client.getIncome());
+					return clientData;
+				})
+				.collect(Collectors.toList());
+	}
+
 
 	private String determineCreditType(NeurotechClient client) {
 		int age = client.getAge();

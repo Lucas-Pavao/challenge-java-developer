@@ -112,7 +112,7 @@ public class NeurotechClientController {
                 .header("Link", hateoasLinks.get("self"))
                 .build();
     }
-    
+
     private String linkToSelfList() {
         return "/api/neurotech-clients";
     }

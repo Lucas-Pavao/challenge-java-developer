@@ -5,6 +5,7 @@ import br.com.neurotech.challenge.entity.VehicleModel;
 import br.com.neurotech.challenge.exceptions.ClientNotEligibleForCreditException;
 import br.com.neurotech.challenge.service.CreditService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -12,6 +13,12 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Map;
+
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @RestController
 @RequestMapping("/api/credit")
@@ -36,7 +43,15 @@ public class CreditController {
     public ResponseEntity<CreditCheckResponseDto> checkCredit(@PathVariable Long clientId, @RequestParam VehicleModel model) {
         try {
             CreditCheckResponseDto response = creditService.checkCredit(clientId, model);
-            return ResponseEntity.ok(response);
+
+
+            String link = linkTo(methodOn(CreditController.class)
+                    .checkCredit(clientId, model))
+                    .withSelfRel().toUri().toString();
+
+            return ResponseEntity.ok()
+                    .header("Link", link) // Adicionando o link no cabeçalho
+                    .body(response);
         } catch (ClientNotEligibleForCreditException ex) {
             CreditCheckResponseDto response = new CreditCheckResponseDto(
                     clientId,
@@ -45,9 +60,33 @@ public class CreditController {
                     false,
                     ex.getMessage()
             );
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+
+
+            String link = linkTo(methodOn(CreditController.class)
+                    .checkCredit(clientId, model))
+                    .withSelfRel().toUri().toString();
+
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .header("Link", link) // Adicionando o link no cabeçalho
+                    .body(response);
         } catch (RuntimeException ex) {
             throw new RuntimeException("Erro inesperado ao verificar crédito: " + ex.getMessage(), ex);
         }
+    }
+
+    @GetMapping("/eligible-clients/hatch")
+    @Operation(summary = "Find eligible clients for hatch",
+            description = "Retrieve a list of clients eligible for Hatch vehicle credit with fixed interest rates.",
+            tags = {"Credit"},
+            responses = {
+                    @ApiResponse(description = "Success", responseCode = "200",
+                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = Map.class)))),
+                    @ApiResponse(description = "Internal Error", responseCode = "500", content = {@Content})
+            })
+    public ResponseEntity<List<Map<String, Object>>> getEligibleClientsForHatch() {
+        List<Map<String, Object>> eligibleClients = creditService.findEligibleClientsForHatch();
+        return ResponseEntity.ok()
+                .header("Link", "/api/credit/eligible-clients/hatch")
+                .body(eligibleClients);
     }
 }

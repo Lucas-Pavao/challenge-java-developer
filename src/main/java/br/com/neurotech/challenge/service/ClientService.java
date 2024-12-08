@@ -41,11 +41,7 @@ public class ClientService {
 			List<NeurotechClient> clients = repository.findAll();
 			logger.info("Clientes encontrados: {}", clients.size());
 			return clients.stream()
-					.map(client -> {
-						NeurotechClientDto dto = converter.convertToDto(client);
-						dto.add(linkTo(methodOn(NeurotechClientController.class).getClientById(client.getId())).withSelfRel());
-						return dto;
-					})
+					.map(converter::convertToDto)
 					.collect(Collectors.toList());
 		} catch (Exception ex) {
 			logger.error("Erro ao buscar clientes: {}", ex.getMessage(), ex);
@@ -74,7 +70,6 @@ public class ClientService {
 			NeurotechClient client = converter.convertToModel(clientDto);
 			NeurotechClient savedClient = repository.save(client);
 			NeurotechClientDto dto = converter.convertToDto(savedClient);
-			dto.add(linkTo(methodOn(NeurotechClientController.class).getClientById(savedClient.getId())).withSelfRel());
 			logger.info("Cliente criado com sucesso: {}", savedClient.getId());
 			return dto;
 		} catch (Exception ex) {
@@ -98,7 +93,6 @@ public class ClientService {
 
 			NeurotechClient updatedClient = repository.save(existingClient);
 			NeurotechClientDto dto = converter.convertToDto(updatedClient);
-			dto.add(linkTo(methodOn(NeurotechClientController.class).getClientById(updatedClient.getId())).withSelfRel());
 			logger.info("Cliente com ID {} atualizado com sucesso.", id);
 			return dto;
 		} catch (Exception ex) {
