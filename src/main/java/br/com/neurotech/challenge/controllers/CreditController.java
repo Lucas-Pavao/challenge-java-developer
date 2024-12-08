@@ -50,7 +50,7 @@ public class CreditController {
                     .withSelfRel().toUri().toString();
 
             return ResponseEntity.ok()
-                    .header("Link", link) // Adicionando o link no cabeçalho
+                    .header("Location", link) // Adicionando o link no cabeçalho
                     .body(response);
         } catch (ClientNotEligibleForCreditException ex) {
             CreditCheckResponseDto response = new CreditCheckResponseDto(
@@ -67,7 +67,7 @@ public class CreditController {
                     .withSelfRel().toUri().toString();
 
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .header("Link", link) // Adicionando o link no cabeçalho
+                    .header("Location", link) // Adicionando o link no cabeçalho
                     .body(response);
         } catch (RuntimeException ex) {
             throw new RuntimeException("Erro inesperado ao verificar crédito: " + ex.getMessage(), ex);
@@ -86,7 +86,7 @@ public class CreditController {
     public ResponseEntity<List<Map<String, Object>>> getEligibleClientsForHatch() {
         List<Map<String, Object>> eligibleClients = creditService.findEligibleClientsForHatch();
         return ResponseEntity.ok()
-                .header("Link", "/api/credit/eligible-clients/hatch")
+                .header("Location", "/api/credit/eligible-clients/hatch")
                 .body(eligibleClients);
     }
 }

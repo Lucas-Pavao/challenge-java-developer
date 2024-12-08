@@ -38,7 +38,7 @@ public class NeurotechClientController {
     public ResponseEntity<List<NeurotechClientDto>> getAllClients() {
         List<NeurotechClientDto> clients = service.findAll();
         return ResponseEntity.ok()
-                .header("Link", linkToSelfList()) // Link para a lista de clientes
+                .header("Location", linkToSelfList()) // Link para a lista de clientes
                 .body(clients);
     }
 
@@ -55,7 +55,7 @@ public class NeurotechClientController {
         Map<String, String> hateoasLinks = service.getHateoasLinks(id);
 
         return ResponseEntity.ok()
-                .header("Link", hateoasLinks.get("self"))
+                .header("Location", hateoasLinks.get("self"))
                 .body(clientDto);
     }
 
@@ -72,7 +72,7 @@ public class NeurotechClientController {
         Map<String, String> hateoasLinks = service.getHateoasLinks(createdClient.getKey());
 
         return ResponseEntity.status(HttpStatus.CREATED)
-                .header("Link", hateoasLinks.get("self"))
+                .header("Location", hateoasLinks.get("self"))
                 .body(createdClient);
     }
 
@@ -93,7 +93,7 @@ public class NeurotechClientController {
         Map<String, String> hateoasLinks = service.getHateoasLinks(id);
 
         return ResponseEntity.ok()
-                .header("Link", hateoasLinks.get("self"))
+                .header("Location", hateoasLinks.get("self"))
                 .body(updatedClient);
     }
 
@@ -109,7 +109,7 @@ public class NeurotechClientController {
         Map<String, String> hateoasLinks = service.getHateoasLinks(id);
 
         return ResponseEntity.noContent()
-                .header("Link", hateoasLinks.get("self"))
+                .header("Location", hateoasLinks.get("self"))
                 .build();
     }
 
