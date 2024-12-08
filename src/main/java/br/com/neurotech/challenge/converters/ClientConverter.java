@@ -12,6 +12,7 @@ public class ClientConverter implements GenericConverter<NeurotechClientDto, Neu
             return null;
         }
         return new NeurotechClientDto(
+                clientModel.getId(),
                 clientModel.getName(),
                 clientModel.getAge(),
                 clientModel.getIncome()

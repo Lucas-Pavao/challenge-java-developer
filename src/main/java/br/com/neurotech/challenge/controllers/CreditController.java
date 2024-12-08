@@ -1,12 +1,13 @@
 package br.com.neurotech.challenge.controllers;
 
+import br.com.neurotech.challenge.dtos.CreditCheckResponseDto;
 import br.com.neurotech.challenge.entity.VehicleModel;
-import br.com.neurotech.challenge.service.CreditService;
 import br.com.neurotech.challenge.exceptions.ClientNotEligibleForCreditException;
+import br.com.neurotech.challenge.service.CreditService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -28,19 +29,25 @@ public class CreditController {
             description = "Verify if a client is eligible for automotive credit based on their profile and vehicle model",
             tags = {"Credit"},
             responses = {
-                    @ApiResponse(description = "Eligible for credit", responseCode = "200", content = @Content(schema = @Schema(type = "string", example = "Apto para crédito automotivo."))),
+                    @ApiResponse(description = "Eligible for credit", responseCode = "200", content = @Content(schema = @Schema(implementation = CreditCheckResponseDto.class))),
                     @ApiResponse(description = "Client not eligible for credit", responseCode = "400", content = @Content(schema = @Schema(type = "string", example = "Cliente não elegível para crédito."))),
                     @ApiResponse(description = "Internal server error", responseCode = "500", content = @Content)
             })
-    public ResponseEntity<String> checkCredit(@PathVariable Long clientId, @RequestParam VehicleModel model) {
+    public ResponseEntity<CreditCheckResponseDto> checkCredit(@PathVariable Long clientId, @RequestParam VehicleModel model) {
         try {
-            creditService.checkCredit(clientId, model);
-            return ResponseEntity.ok("Apto para crédito automotivo.");
+            CreditCheckResponseDto response = creditService.checkCredit(clientId, model);
+            return ResponseEntity.ok(response);
         } catch (ClientNotEligibleForCreditException ex) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
+            CreditCheckResponseDto response = new CreditCheckResponseDto(
+                    clientId,
+                    null,
+                    model.name(),
+                    false,
+                    ex.getMessage()
+            );
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         } catch (RuntimeException ex) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Erro inesperado: " + ex.getMessage());
+            throw new RuntimeException("Erro inesperado ao verificar crédito: " + ex.getMessage(), ex);
         }
     }
 }
