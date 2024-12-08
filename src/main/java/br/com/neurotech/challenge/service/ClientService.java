@@ -16,6 +16,7 @@ import org.springframework.web.server.ResponseStatusException;
 import br.com.neurotech.challenge.entity.NeurotechClient;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
@@ -58,7 +59,6 @@ public class ClientService {
 			NeurotechClient client = repository.findById(id)
 					.orElseThrow(() -> new ClientNotFoundException("Cliente com ID " + id + " não encontrado."));
 			NeurotechClientDto dto = converter.convertToDto(client);
-			dto.add(linkTo(methodOn(NeurotechClientController.class).getClientById(id)).withSelfRel());
 			logger.info("Cliente com ID {} encontrado.", id);
 			return dto;
 		} catch (Exception ex) {
@@ -120,5 +120,10 @@ public class ClientService {
 			logger.error("Erro ao excluir cliente com ID {}: {}", id, ex.getMessage(), ex);
 			throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Erro ao excluir cliente no banco de dados", ex);
 		}
+	}
+
+	public Map<String, String> getHateoasLinks(Long id) {
+		String selfLink = linkTo(methodOn(NeurotechClientController.class).getClientById(id)).withSelfRel().getHref();
+		return Map.of("self", selfLink);
 	}
 }

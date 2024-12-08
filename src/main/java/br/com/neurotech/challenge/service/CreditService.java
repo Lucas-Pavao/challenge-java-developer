@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
+import br.com.neurotech.challenge.controllers.CreditController;
 
 @Service
 public class CreditService {
@@ -20,44 +21,45 @@ public class CreditService {
 	}
 
 	public CreditCheckResponseDto checkCredit(Long clientId, VehicleModel model) {
-		try {
-			NeurotechClient client = repository.findById(clientId)
-					.orElseThrow(() -> new RuntimeException("Cliente não encontrado"));
+		NeurotechClient client = repository.findById(clientId)
+				.orElseThrow(() -> new RuntimeException("Cliente não encontrado"));
 
-			boolean isEligible;
-			String message = "Cliente elegível para crédito.";
+		String creditType = determineCreditType(client);
 
-			switch (model) {
-				case HATCH:
-					isEligible = isEligibleForHatch(client);
-					if (!isEligible) {
-						message = "Cliente não é elegível para crédito para veículo do tipo Hatch.";
-					}
-					break;
+		if (model == VehicleModel.HATCH && !isEligibleForHatch(client)) {
+			throw new ClientNotEligibleForCreditException("Cliente não é elegível para crédito para veículo do tipo Hatch.");
+		}
 
-				case SUV:
-					isEligible = isEligibleForSuv(client);
-					if (!isEligible) {
-						message = "Cliente não é elegível para crédito para veículo do tipo SUV.";
-					}
-					break;
+		if (model == VehicleModel.SUV && !isEligibleForSuv(client)) {
+			throw new ClientNotEligibleForCreditException("Cliente não é elegível para crédito para veículo do tipo SUV.");
+		}
 
-				default:
-					throw new IllegalArgumentException("Modelo de veículo desconhecido.");
-			}
+		// Criar e retornar DTO com informações do cliente e tipo de crédito
+		CreditCheckResponseDto response = new CreditCheckResponseDto(
+				client.getId(),
+				client.getName(),
+				model.name(),
+				true,
+				"Apto para crédito automotivo na modalidade: " + creditType
+		);
 
-			CreditCheckResponseDto response = new CreditCheckResponseDto(
-					client.getId(),
-					client.getName(),
-					model.name(),
-					isEligible,
-					message
-			);
+		// Adicionar links HATEOAS
+		response.add(linkTo(methodOn(CreditController.class).checkCredit(clientId, model)).withSelfRel());
+		return response;
+	}
 
-			return response;
+	private String determineCreditType(NeurotechClient client) {
+		int age = client.getAge();
+		double income = client.getIncome();
 
-		} catch (Exception ex) {
-			throw new RuntimeException("Erro ao verificar crédito.", ex);
+		if (age >= 18 && age <= 25) {
+			return "Crédito com Juros Fixos (5% a.a)";
+		} else if (age >= 21 && age <= 65 && income >= 5000.00 && income <= 15000.00) {
+			return "Crédito com Juros Variáveis";
+		} else if (age > 65) {
+			return "Crédito Consignado";
+		} else {
+			throw new ClientNotEligibleForCreditException("Cliente não atende aos critérios de crédito.");
 		}
 	}
 

@@ -14,7 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.UUID;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/neurotech-clients")
@@ -36,7 +36,10 @@ public class NeurotechClientController {
             @ApiResponse(description = "Internal Error", responseCode = "500", content = {@Content})
     })
     public ResponseEntity<List<NeurotechClientDto>> getAllClients() {
-        return ResponseEntity.ok(service.findAll());
+        List<NeurotechClientDto> clients = service.findAll();
+        return ResponseEntity.ok()
+                .header("Link", linkToSelfList()) // Link para a lista de clientes
+                .body(clients);
     }
 
     @GetMapping("/{id}")
@@ -48,7 +51,12 @@ public class NeurotechClientController {
             @ApiResponse(description = "Internal Error", responseCode = "500", content = {@Content})
     })
     public ResponseEntity<NeurotechClientDto> getClientById(@PathVariable Long id) {
-        return ResponseEntity.ok(service.findById(id));
+        NeurotechClientDto clientDto = service.findById(id);
+        Map<String, String> hateoasLinks = service.getHateoasLinks(id);
+
+        return ResponseEntity.ok()
+                .header("Link", hateoasLinks.get("self"))
+                .body(clientDto);
     }
 
     @PostMapping
@@ -60,7 +68,12 @@ public class NeurotechClientController {
             @ApiResponse(description = "Internal Error", responseCode = "500", content = {@Content})
     })
     public ResponseEntity<NeurotechClientDto> createClient(@Valid @RequestBody NeurotechClientDto client) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(service.create(client));
+        NeurotechClientDto createdClient = service.create(client);
+        Map<String, String> hateoasLinks = service.getHateoasLinks(createdClient.getKey());
+
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .header("Link", hateoasLinks.get("self"))
+                .body(createdClient);
     }
 
     @PutMapping("/{id}")
@@ -76,7 +89,12 @@ public class NeurotechClientController {
             @PathVariable Long id,
             @Valid @RequestBody NeurotechClientDto client) {
 
-        return ResponseEntity.ok(service.update(id, client));
+        NeurotechClientDto updatedClient = service.update(id, client);
+        Map<String, String> hateoasLinks = service.getHateoasLinks(id);
+
+        return ResponseEntity.ok()
+                .header("Link", hateoasLinks.get("self"))
+                .body(updatedClient);
     }
 
     @DeleteMapping("/{id}")
@@ -88,6 +106,14 @@ public class NeurotechClientController {
     })
     public ResponseEntity<Void> deleteClient(@PathVariable Long id) {
         service.delete(id);
-        return ResponseEntity.noContent().build();
+        Map<String, String> hateoasLinks = service.getHateoasLinks(id);
+
+        return ResponseEntity.noContent()
+                .header("Link", hateoasLinks.get("self"))
+                .build();
+    }
+    
+    private String linkToSelfList() {
+        return "/api/neurotech-clients";
     }
 }
